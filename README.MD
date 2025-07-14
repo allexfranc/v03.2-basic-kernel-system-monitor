@@ -37,3 +37,6 @@ To remove all generated files (object files, ELF files, and the final binary), r
 ```bash
 	make clean
 ```
+
+## Blog
+https://allexfranc.github.io/2025/07/14/stm32-minimal-boot-to-os-part-3.html
