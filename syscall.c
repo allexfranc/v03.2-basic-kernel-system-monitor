@@ -50,6 +50,18 @@ void SVC_Handler(void){
 			led_set(led_id, state);
             
             break;
+		case SYS_TICKS:
+			psp_stack[0] = get_system_ticks();
+			break;
+			
+		case SYS_CONTEXT_SWITCHES:
+			psp_stack[0] = get_context_switches();
+			break;
+		
+		case SYS_TASK_TICKS:
+			uint8_t task_num = psp_stack[0];
+			psp_stack[0] = get_task_ticks(task_num);
+			break;
 	}
 }
 
@@ -90,4 +102,45 @@ void sys_led_control(uint8_t led, uint8_t state){
 		: "r"(led), "r"(state)  // Inputs
 		: "r0", "r1"           // We're modifying R0, R1
 	);
+}
+
+uint32_t sys_ticks(void){
+	uint32_t result;
+	
+	__asm volatile(
+		"SVC #4			\n"
+		"MOV %0, r0		\n"
+		: "=r" (result)
+		:
+		: "r0"
+	);
+	
+	return result;
+}
+
+uint32_t sys_context_switches(void){
+	uint32_t result;
+	
+	__asm volatile(
+		"SVC #5			\n"
+		"MOV %0, r0		\n"
+		: "=r" (result)
+		:
+		: "r0"
+	);
+	
+	return result;
+}
+
+uint32_t sys_task_ticks(uint8_t task_num){
+    register uint32_t r0 __asm__("r0") = task_num;
+    register uint32_t result __asm__("r0");
+    
+    __asm volatile(
+        "SVC #6"
+        : "=r" (result)
+        : "r" (r0)
+    );
+    
+    return result;
 }

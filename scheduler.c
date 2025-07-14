@@ -4,6 +4,7 @@
 static uint32_t idle_stack[STACK_SIZE];
 static uint32_t green_stack[STACK_SIZE];
 static uint32_t blue_stack[STACK_SIZE];
+static uint32_t system_monitor_stack[STACK_SIZE];
 
 // Task control blocks
 static task_t tasks[NUM_TASKS];
@@ -20,10 +21,16 @@ static uint8_t current_task = 0;
 static uint32_t system_ticks = 0;
 static uint8_t scheduler_countdown = 10;
 static uint32_t task_size = sizeof(task_t);
+static uint32_t context_switches = 0;
 
 // SysTick triggers context switch
 void SysTick_Handler(void) {
 	system_ticks++;
+	
+	// Count ticks for current running task
+	if(tasks[current_task].state == TASK_RUNNING){
+			tasks[current_task].run_ticks++;
+	}
 	
    // Search for sleeping tasks and wake them up
     for(int i = 0; i < NUM_TASKS; i++) {
@@ -78,7 +85,10 @@ void scheduler_init(void) {
 	tasks[1].wake_tick = 0;
     tasks[2].stack_pointer = init_stack(blue_stack, task_blue);
 	tasks[2].state = TASK_READY;
-    tasks[2].wake_tick = 0;
+    tasks[2].wake_tick = 0; 
+	tasks[3].stack_pointer = init_stack(system_monitor_stack, task_system_monitor);
+	tasks[3].state = TASK_READY;
+    tasks[3].wake_tick = 0;
     current_task = 0;
 }
 
@@ -106,6 +116,8 @@ void scheduler_start(void) {
 uint8_t switch_task(void){
 	uint8_t next_task = current_task;
 	uint8_t checked = 0;
+	context_switches++;
+
 	
 	do{
 		next_task = ((next_task + 1)%NUM_TASKS);
@@ -207,4 +219,19 @@ task_state_t get_task_state(uint8_t task_num) {
 
 uint8_t get_current_task(void){
 	return current_task;
+}
+
+uint32_t get_system_ticks(void){
+	return system_ticks;
+}
+
+uint32_t get_context_switches(void) {
+    return context_switches;
+}
+
+uint32_t get_task_ticks(uint8_t task_num){
+	if(task_num >= NUM_TASKS){
+		return 0;
+	}
+	return tasks[task_num].run_ticks;
 }
